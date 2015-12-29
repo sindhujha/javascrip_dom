@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title> Network List </title>
+    <script type="text/javascript">
+        function read_xml(form_obj) {
+            var url_xml = form_obj.network_xml.value;
+            if(url_xml == "")
+            {
+                alert("File is not entered");
+                return;
+            }
+
+            if (window.XMLHttpRequest)
+            {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else
+            {
+                // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.open("GET", url_xml, false);
+            xmlhttp.send();
+            if(xmlhttp.status ==  404 )
+            {
+                alert("File Not Found");
+                return;
+            }
+            var xmlDoc = xmlhttp.responseXML;
+
+            if (window.ActiveXObject)
+            {
+                if (xmlDoc.parseError.errorCode != 0) {
+                    var myErr = xmlDoc.parseError;
+                    generateError(xmlDoc);
+                    hWin=window.open("", "Error", "height=100,width=200");
+                    hWin.document.write("Error in XML File");
+                }
+                else {
+
+                    generateHTML(xmlDoc);
+                    hWin = window.open("", "Company_list", "height=800,width=600");
+                    hWin.document.write(network_table);
+
+                }
+            }
+            else //else if FF, execute script once XML object has loaded
+            {
+                function error_check(xmlDoc)
+                {
+                    if (xmlDoc.documentElement.nodeName =="parsererror")
+                    {
+                        alert(xmlDoc.documentElement.childNodes[0].nodeValue);
+                    }
+                    else {
+
+                        var result=generateHTML(xmlDoc);
+                        if (result == false)
+                            return;
+                        else
+                        {
+                            hWin = window.open("", "Company_list","scrollbars=1,width=600,height=500");
+                            hWin.document.write(network_table);
+                        }
+                    }
+
+                }
+                    xmlDoc.onload = error_check(xmlDoc);
+
+            }
+                hWin.document.close();
+            }
+            function generateHTML(xmlDoc)
+            {
+                function remove_space(parent,node_list)
+                {
+                    for(var count=0;count<node_list.length;count++)
+                    {
+                        if(node_list[count].nodeType == 3)
+                        {
+                            parent.removeChild(node_list[count]);
+                        }
+                    }
+                    return node_list;
+
+                }
+                network_table = "<html><head><title>Network Company List</title></head><body>";
+                network_table += "<table border='2'><thead><tr>";
+                var header_list = xmlDoc.getElementsByTagName("Data");
+                console.log(header_list);
+                var row_list = xmlDoc.getElementsByTagName("Row");
+                if (row_list.length==0)
+                {
+                    window.alert("No Company Entries Found");
+                    //window.location.reload(true);
+                    return(false);
+                }
+                else {
+                    row_list = remove_space(row_list[0].parentNode, row_list);
+                }
+
+                for (var i = 0; i < header_list.length; i++)
+                {
+                    var header_name = header_list[i].firstChild.nodeValue;
+                    network_table += "<th>"+header_name+"</th>";
+                }
+                network_table += "</tr></thead>";
+                for (i = 0; i < row_list.length; i++) {
+                    var row_child_list = row_list[i].childNodes;
+                    row_child_list = remove_space(row_child_list[0].parentNode, row_child_list);
+                    network_table += "<tr>";
+                    for (var j = 0; j < row_list[i].childNodes.length; j++) {
+                        if (row_list[i].childNodes[j].hasChildNodes()) {
+                            var row_value = row_list[i].childNodes[j].childNodes[0].nodeValue;
+                            console.log(row_value);
+                        }
+                        else {
+                            var row_value = "";
+                        }
+                        if (j == 5) {
+                            network_table += "<td><img src=" + row_value + "></td>";
+
+                        }
+                        else if (j == 4) {
+                            network_table += "<td><a href=" + row_value + ">" + row_value + "</a></td>";
+                        }
+                        else if (j == 2) {
+
+                            if (row_list[i].childNodes[j].childNodes.length == 0) {
+                                network_table += "<td> </td>";
+                            }
+                            else {
+                                var feed_list = row_list[i].childNodes[j].getElementsByTagName("Feed");
+                                network_table += "<td><ul>";
+                                for (var k = 0; k < feed_list.length; k++) {
+                                    if ((feed_list[k].hasChildNodes()) && (feed_list[k].childNodes[0].nodeType == 3)) {
+                                        if ((feed_list[k].childNodes[0].nodeValue.trim().length == 0)) {
+                                            continue;
+                                        }
+                                        else {
+
+                                            var bulletin = feed_list[k].childNodes[0].nodeValue;
+                                            network_table += "<li>" + bulletin + "</li>";
+                                        }
+                                    }
+
+
+                                }
+                                network_table += "</ul></td>";
+
+                            }
+                        }
+                        else if (row_value != "null") {
+                            network_table += "<td>" + row_value + "</td>";
+                        }
+                        else {
+                            network_table += "<td>N/A</td>";
+                        }
+                    }
+                    network_table += "</tr>";
+                }
+                network_table += "</bo"+"dy>";
+                network_table += "</html>";
+            }
+
+
+    </script>
+</head>
+
+<body>
+<center><h3>Enter URL for Company List XML File</h3></center>
+<center><form name="myform" method="GET" id="networklist">
+    <input type="text" name="network_xml" maxlength="100" size="30"/>
+    <br><br>
+    <input type="button" name="submit" value="Submit Query" onClick="read_xml(this.form)" />
+
+</form></center>
+<noscript>
+</body>
+
+</html>
